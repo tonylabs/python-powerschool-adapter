@@ -36,16 +36,12 @@ class Response(Iterator, MutableMapping):
         return self.data
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Converts the response data to a dictionary.
-        """
         return self.data if isinstance(self.data, dict) else {}
 
+
     def to_json(self) -> str:
-        """
-        Converts the response data to a JSON string.
-        """
         return json.dumps(self.data)
+
 
     def rewind(self) -> None:
         """
