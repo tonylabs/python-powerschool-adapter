@@ -1,0 +1,1 @@
+# PowerSchool Python Adapter
