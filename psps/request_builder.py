@@ -1,13 +1,14 @@
 from .request import Request
 from .response import Response
+from typing import Union
 
 class RequestBuilder:
 
-    GET = "get"
-    POST = "post"
-    PUT = "put"
-    PATCH = "patch"
-    DELETE = "delete"
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
 
     def __init__(self, server_address, client_id, client_secret, cache_key="powerschool_token"):
         self.request = Request(server_address, client_id, client_secret, cache_key)
@@ -18,66 +19,11 @@ class RequestBuilder:
         self.data = {}
         self.table_name = None
         self.query_string = {}
+        self.id = None
         self.include_projection = False
         self.return_as_json = False
         self.page_key = "record"
         self.paginator = None
-
-
-    """
-    Sets the table for a request against a custom table
-    """
-    def set_table(self, table):
-        self.table_name = table
-        self.endpoint = f"/ws/schema/table/{table}"
-        self.include_projection = True
-        return self
-
-
-    def set_endpoint(self, endpoint):
-        """Sets the API endpoint."""
-        self.endpoint = endpoint
-        return self
-
-
-    def add_query_param(self, key, value):
-        self.query_string[key] = value
-        return self
-
-    def has_query_param(self, key):
-        """Checks if a query parameter exists."""
-        return key in self.query_string
-
-    def with_query_string(self, query):
-        """Adds query parameters from a dictionary."""
-        self.query_string.update(query)
-        return self
-
-
-    def table(self, table):
-        """Alias for set_table."""
-        return self.set_table(table)
-
-    def for_table(self, table):
-        """Alias for set_table."""
-        return self.set_table(table)
-
-    def against_table(self, table):
-        """Alias for set_table."""
-        return self.set_table(table)
-
-    def set_id(self, resource_id):
-        """Sets a specific resource ID for the request."""
-        self.endpoint = f"{self.endpoint}/{resource_id}"
-        return self
-
-    def set_named_query(self, query_name, data=None):
-        """Sets a named query for the request."""
-        self.endpoint = f"/ws/schema/query/{query_name}"
-        if data:
-            self.set_data(data)
-            self.set_method(self.POST)
-        return self
 
 
     def reset(self):
@@ -90,6 +36,112 @@ class RequestBuilder:
         self.return_as_json = False
         self.page_key = "record"
         self.paginator = None
+
+
+    def set_table(self, table: str) -> "RequestBuilder":
+        self.table_name = table.split('/')[-1]
+        self.endpoint = table if table.startswith('/') else f"/ws/schema/table/{table}"
+        self.include_projection = True
+        self.page_key = 'record'
+        return self
+
+
+    def table(self, table) -> "RequestBuilder":
+        return self.set_table(table)
+
+
+    def for_table(self, table):
+        return self.set_table(table)
+
+
+    def against_table(self, table):
+        return self.set_table(table)
+
+
+    def set_id(self, resource_id: Union[str, int]):
+        self.endpoint += f"/{resource_id}"
+        self.id = resource_id
+        return self
+
+
+    def id(self, resource_id: Union[str, int]):
+        return self.set_id(resource_id)
+
+
+    def for_id(self, resource_id: Union[str, int]):
+        return self.set_id(resource_id)
+
+
+    def resource(self, endpoint: str, method: str = None, data: dict = None):
+        self.endpoint = endpoint
+        self.include_projection = False
+
+        if method is not None:
+            self.method = method
+
+        if data:
+            self.set_data(data)
+
+        # If the method and data are set, automatically send the request
+        if self.method is not None and self.data:
+            return self.send()
+
+        return self
+
+
+    def exclude_projection(self):
+        self.include_projection = False
+        return self
+
+
+    def without_projection(self):
+        return self.exclude_projection()
+
+
+    def set_endpoint(self, endpoint: str):
+        self.endpoint = endpoint
+        self.page_key = endpoint.split('/')[-1]
+        return self.exclude_projection()
+
+
+    def to_endpoint(self, endpoint: str):
+        return self.set_endpoint(endpoint)
+
+
+    def to(self, endpoint: str):
+        return self.set_endpoint(endpoint)
+
+
+    def endpoint(self, endpoint: str):
+        return self.set_endpoint(endpoint)
+
+
+    def set_named_query(self, query_name: str, data: dict = None):
+        self.endpoint = query_name if query_name.startswith('/') else f"/ws/schema/query/{query_name}"
+        self.page_key = 'record'
+
+        # If there's data along with it, it's shorthand for sending the request
+        if data:
+            return self.set_data(data).post()
+
+        # By default, don't include the projection unless it gets added later explicitly
+        self.include_projection = False
+
+        return self.set_method(self.POST)
+
+
+    def add_query_param(self, key, value):
+        self.query_string[key] = value
+        return self
+
+
+    def has_query_param(self, key):
+        return key in self.query_string
+
+
+    def with_query_string(self, query):
+        self.query_string.update(query)
+        return self
 
 
     def set_data(self, data):
