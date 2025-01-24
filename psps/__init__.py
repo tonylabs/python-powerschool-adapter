@@ -1,4 +1,4 @@
 from .request import Request
-from .request_builder import RequestBuilder
+from .powerschool import PowerSchool
 from .response import Response
 from .paginator import Paginator

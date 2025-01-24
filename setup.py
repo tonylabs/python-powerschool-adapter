@@ -15,8 +15,9 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",                # Minimum Python version
+    python_requires=">=3.10",                # Minimum Python version
     install_requires=[                      # Dependencies
-        "requests>=2.20.0"
+        "requests>=2.20.0",
+        "python-dotenv>=1.0.1"
     ],
 )
