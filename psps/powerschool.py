@@ -1,6 +1,8 @@
 from .request import Request
 from .response import Response
+from .paginator import Paginator
 from urllib.parse import parse_qs
+
 
 class PowerSchool:
 	GET = "GET"
@@ -11,18 +13,21 @@ class PowerSchool:
 
 	def __init__(self, server_address, client_id, client_secret, cache_key="powerschool"):
 		self.request = Request(server_address, client_id, client_secret, cache_key)
-		# self.request.authenticate()
+		self.request.authenticate()
 		self.endpoint = None
 		self.http_method = self.GET
-		self.options = {}
-		self.data = {}
-		self.table_name = None
-		self.query_string = {}
-		self.id = None
-		self.include_projection = False
-		self.response_as_json = False
-		self.page_key = "record"
-		self.paginator = None
+		self.data = {}  # Dictionary to hold request data
+		self.options = {}  # Dictionary to hold request options
+		self.query_string = {}  # Dictionary to hold query string parameters
+		self.table_name: str = None
+		self.id: str | int | None = None
+		self.include_projection: bool = False
+		self.response_as_json: bool = False
+		self.page_key: str = "record"
+		self.paginator: Paginator = None
+
+	def get_request(self) -> Request:
+		return self.request
 
 	def reset(self):
 		self.endpoint = None
@@ -36,28 +41,19 @@ class PowerSchool:
 		self.paginator = None
 
 	def set_table(self, table: str):
-		self.table_name = table.split('/')[-1]
+		self.table_name = table.split('/')[-1]  # Extract the part after the last / in the table string
 		self.endpoint = table if table.startswith('/') else f"/ws/schema/table/{table}"
 		self.include_projection = True
-		self.page_key = 'record'
+		self.page_key = "record"
 		return self
 
 	def table(self, table):
-		return self.set_table(table)
-
-	def for_table(self, table):
-		return self.set_table(table)
-
-	def against_table(self, table):
 		return self.set_table(table)
 
 	def set_id(self, resource_id: str | int):
 		self.endpoint += f"/{resource_id}"
 		self.id = resource_id
 		return self
-
-	def id(self, resource_id: str | int):
-		return self.set_id(resource_id)
 
 	def for_id(self, resource_id: str | int):
 		return self.set_id(resource_id)
@@ -90,13 +86,13 @@ class PowerSchool:
 		self.page_key = endpoint.split('/')[-1]
 		return self.exclude_projection()
 
+	def get_endpoint(self):
+		return self.endpoint
+
 	def to_endpoint(self, endpoint: str):
 		return self.set_endpoint(endpoint)
 
 	def to(self, endpoint: str):
-		return self.set_endpoint(endpoint)
-
-	def endpoint(self, endpoint: str):
 		return self.set_endpoint(endpoint)
 
 	def set_named_query(self, query_name: str, data: dict = None):
@@ -127,20 +123,16 @@ class PowerSchool:
 	def pq(self, query_name: str, data: dict = None):
 		return self.set_named_query(query_name, data)
 
-
 	def set_data(self, data: dict):
 		self.data = self.cast_to_values_string(data)
 		return self
 
-
 	def with_data(self, data: dict):
 		return self.set_data(data)
-
 
 	def set_data_item(self, key: str, value: str | bool | dict | list):
 		self.data[key] = self.cast_to_values_string(value)
 		return self
-
 
 	def with_query_string(self, query):
 		if isinstance(query, dict):
@@ -154,10 +146,8 @@ class PowerSchool:
 			self.query_string = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
 		return self
 
-
 	def query(self, query_string: str | list):
 		return self.with_query_string(query_string)
-
 
 	def add_query_param(self, key, value):
 		self.query_string[key] = value
@@ -166,14 +156,11 @@ class PowerSchool:
 	def has_query_param(self, key):
 		return key in self.query_string
 
-
 	def q(self, query: str):
 		return self.add_query_param('q', query)
 
-
 	def query_expression(self, expression: str):
 		return self.q(expression)
-
 
 	def adhoc_filter(self, expression: str):
 		return self
@@ -188,15 +175,12 @@ class PowerSchool:
 		self.include_projection = True
 		return self
 
-
 	def page_size(self, size):
 		self.add_query_param("pagesize", size)
 		return self
 
-
 	def page(self, page):
 		return self.add_query_param("page", page)
-
 
 	def sort(self, columns: str | list, descending=False):
 		if isinstance(columns, list):
@@ -205,29 +189,23 @@ class PowerSchool:
 		self.add_query_param("sortdescending", "true" if descending else "false")
 		return self
 
-
 	def adhoc_order(self, expression: str):
 		return self.add_query_param('order', expression)
 
-
 	def order(self, expression: str):
 		return self.adhoc_order(expression)
-
 
 	def include_count(self):
 		self.add_query_param("count", "true")
 		return self
 
-
 	def data_version(self, version: int | str, application_name: str):
-		#The $dataversion parameter is prefixed with $ because it's a special PowerSchool API parameter that:
+		# The $dataversion parameter is prefixed with $ because it's a special PowerSchool API parameter that:
 		self.set_data_item("$dataversion", version).set_data_item("$dataversion_applicationname", application_name)
 		return self
 
-
 	def with_data_version(self, version: int, application_name: str):
 		return self.data_version(version, application_name)
-
 
 	def expansions(self, expansions: str | list):
 		if isinstance(expansions, list):
@@ -235,14 +213,11 @@ class PowerSchool:
 		self.add_query_param("expansions", expansions)
 		return self
 
-
 	def with_expansions(self, expansions: str | list):
 		return self.expansions(expansions)
 
-
 	def with_expansion(self, expansion: str):
 		return self.with_expansions(expansion)
-
 
 	def extensions(self, extensions: str | list):
 		if isinstance(extensions, list):
@@ -250,31 +225,25 @@ class PowerSchool:
 		self.add_query_param("extensions", extensions)
 		return self
 
-
 	def with_extensions(self, extensions: str | list):
 		return self.extensions(extensions)
 
-
 	def with_extension(self, extension: str):
 		return self.extensions(extension)
-
 
 	def get_subscription_changes(self, application: str, version: int):
 		self.set_endpoint(f"/ws/dataversion/{application}/{version}")
 		self.set_method(self.GET)
 		return self.send()
 
-
 	def count(self):
 		self.endpoint += "/count"
 		self.include_projection = False
 		return self.get()
 
-
 	def raw(self):
 		self.response_as_json = False
 		return self
-
 
 	def as_json_response(self):
 		self.response_as_json = True
@@ -284,7 +253,8 @@ class PowerSchool:
 	Recursively casts all values in the data dictionary to strings.
 	Handles nested dictionaries and lists.
 	"""
-	def cast_to_values_string(self, data: dict | list | bool) -> list:
+
+	def cast_to_values_string(self, data: dict | list | bool):
 		if isinstance(data, dict):
 			return {key: self.cast_to_values_string(value) for key, value in data.items()}
 		elif isinstance(data, list):
@@ -298,11 +268,11 @@ class PowerSchool:
 		else:
 			return str(data).strip()
 
-
 	"""
 	Builds the JSON structure for the request body.
 	This handles cases for table-based requests, IDs, and plain data.
 	"""
+
 	def build_request_json(self):
 		if self.http_method in [self.GET, self.DELETE]:
 			return self  # No JSON body for GET/DELETE requests
@@ -323,17 +293,17 @@ class PowerSchool:
 		if self.data and not self.table_name:
 			self.options['json'] = self.data
 
-		#Remove the json option if there is nothing there
+		# Remove the json option if there is nothing there
 		if not self.options['json']:
 			del self.options['json']
 
 		return self
 
-
 	"""
 	Builds the query string for the request.
 	Automatically includes `projection=*` for GET requests if not already set.
 	"""
+
 	def build_request_query(self):
 		if self.http_method not in {self.GET, self.POST}:  # Check if method is not GET or POST
 			return self
@@ -355,15 +325,12 @@ class PowerSchool:
 
 		return self
 
-
 	def set_method(self, method: str):
 		self.http_method = method
 		return self
 
-
 	def method(self, method: str):
 		return self.set_method(method)
-
 
 	def get(self, endpoint=None):
 		if endpoint:
@@ -371,26 +338,21 @@ class PowerSchool:
 		self.set_method(self.GET)
 		return self.send()
 
-
 	def post(self):
 		self.set_method(self.POST)
 		return self.send()
-
 
 	def put(self):
 		self.set_method(self.PUT)
 		return self.send()
 
-
 	def patch(self):
 		self.set_method(self.PATCH)
 		return self.send()
 
-
 	def delete(self):
 		self.set_method(self.DELETE)
 		return self.send()
-
 
 	def send(self, reset=True):
 		if not self.endpoint:
@@ -402,7 +364,7 @@ class PowerSchool:
 			self.endpoint += f"?{query}"
 
 		# Send the request
-		response_data = self.request.make_request(self.http_method, self.endpoint, {"json": self.data})
+		response_data = self.request.make_request(self.http_method, self.endpoint, {"json": self.options})
 		response = Response(response_data)
 
 		if reset:

@@ -88,7 +88,6 @@ class Request:
 		Authenticates against the API and retrieves an auth token.
 		:param force: Force authentication even if there is an existing token
 		"""
-
 		if not force and self.token:
 			return
 
