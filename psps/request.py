@@ -68,7 +68,6 @@ class Request:
 		response = self.client.request(method, url, **options)
 
 		try:
-			response = self.client.request(method, url, **options)
 			response.raise_for_status()
 		except requests.exceptions.HTTPError as e:
 			if response.status_code == 401 and self.attempts < 3:

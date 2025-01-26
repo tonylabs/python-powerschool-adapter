@@ -1,6 +1,5 @@
 import os
 import json
-import sys
 import unittest
 import colorama
 import faker
@@ -24,23 +23,23 @@ powerschool = PowerSchool(
     client_secret=CLIENT_SECRET
 )
 
-class TestPowerSchool(unittest.TestCase):
-    def test_token(self):
-        if not CLIENT_ID or not CLIENT_SECRET:
-            self.fail("Client ID or Client Secret not set in environment variables")
-        print(powerschool.get_token())
+class TestSubscription(unittest.TestCase):
+    """
+    def test_create_subscription(self):
+        response = powerschool.to('/ws/v1/event_subscription').method('PUT').send()
+        student = response.to_json()
+        student_data = json.loads(student)
+        print(Fore.GREEN + json.dumps(student_data, indent=4))
+    """
 
-    def test_table(self):
-        print(Fore.LIGHTRED_EX + "Testing table method")
-        response = powerschool.table('students').projection(['ID', 'DCID', 'STUDENT_NUMBER', 'LASTFIRST']).sort('lastfirst').method(powerschool.GET).send()
-
-        # Output Response
+    def test_review_subscription(self):
+        response = powerschool.to('/ws/v1/event_subscription').method('GET').send()
         student = response.to_json()
         student_data = json.loads(student)
         print(Fore.GREEN + json.dumps(student_data, indent=4))
 
-    def test_set_id(self):
-        response = powerschool.table('Students').set_id(1).projection(['ID', 'DCID', 'STUDENT_NUMBER', 'LASTFIRST', 'FAMILY_IDENT']).method(powerschool.GET).send()
+    def remove_subscription(self):
+        response = powerschool.to('/ws/v1/event_subscription').method('DELETE').send()
         student = response.to_json()
         student_data = json.loads(student)
         print(Fore.GREEN + json.dumps(student_data, indent=4))

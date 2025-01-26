@@ -1,10 +1,29 @@
+"""
+Copyright © 2025 TONYLABS TECH CO., LTD..
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+and associated documentation files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+
 from .request import Request
 from .response import Response
 from .paginator import Paginator
 from urllib.parse import parse_qs
 
-
 class PowerSchool:
+
 	GET = "GET"
 	POST = "POST"
 	PUT = "PUT"
@@ -308,7 +327,7 @@ class PowerSchool:
 		if self.http_method not in {self.GET, self.POST}:  # Check if method is not GET or POST
 			return self
 
-		self.options['query'] = ""
+		self.options['params'] = ""
 		query_parts = []
 
 		# Add existing query string parameters
@@ -321,7 +340,7 @@ class PowerSchool:
 
 		# Combine query parts into a full query string
 		if query_parts:
-			self.options['query'] = "&".join(query_parts)
+			self.options['params'] = "&".join(query_parts)
 
 		return self
 
@@ -358,13 +377,11 @@ class PowerSchool:
 		if not self.endpoint:
 			raise ValueError("Endpoint must be set before sending a request.")
 
-		# Build the query string
-		if self.query_string:
-			query = "&".join([f"{key}={value}" for key, value in self.query_string.items()])
-			self.endpoint += f"?{query}"
+
+		self.build_request_json().build_request_query()
 
 		# Send the request
-		response_data = self.request.make_request(self.http_method, self.endpoint, {"json": self.options})
+		response_data = self.request.make_request(self.http_method, self.endpoint, self.options, self.response_as_json)
 		response = Response(response_data)
 
 		if reset:
