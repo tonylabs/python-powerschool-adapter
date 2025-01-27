@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="psps",                            # Package name
+    name="powerschool_adapter",                             # Package name
     version="1.0.0",                        # Version
     author="TONYLABS TECH CO., LTD.",       # Author name
     author_email="tony.wang@tonyalbs.com",  # Author email
