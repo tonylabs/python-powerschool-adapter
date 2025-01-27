@@ -38,12 +38,12 @@ class PowerSchool:
 		self.data = {}  # Dictionary to hold request data
 		self.options = {}  # Dictionary to hold request options
 		self.query_string = {}  # Dictionary to hold query string parameters
-		self.table_name: str = None
+		self.table_name: str | None = None
 		self.id: str | int | None = None
 		self.include_projection: bool = False
-		self.response_as_json: bool = False
+		self.response_as_json: bool = True
 		self.page_key: str = "record"
-		self.paginator: Paginator = None
+		self.paginator = None
 
 	def get_request(self) -> Request:
 		return self.request
@@ -55,7 +55,7 @@ class PowerSchool:
 		self.query_string = {}
 		self.table_name = None
 		self.include_projection = False
-		self.response_as_json = False
+		self.response_as_json = True
 		self.page_key = "record"
 		self.paginator = None
 
@@ -66,7 +66,7 @@ class PowerSchool:
 		self.page_key = "record"
 		return self
 
-	def table(self, table):
+	def table(self, table: str):
 		return self.set_table(table)
 
 	def set_id(self, resource_id: str | int):
@@ -377,15 +377,15 @@ class PowerSchool:
 		if not self.endpoint:
 			raise ValueError("Endpoint must be set before sending a request.")
 
-
 		self.build_request_json().build_request_query()
 
 		# Send the request
-		response_data = self.request.make_request(self.http_method, self.endpoint, self.options, self.response_as_json)
-		response = Response(response_data)
+		response = self.request.make_request(self.http_method, self.endpoint, self.options, self.response_as_json)
+		response = Response(response)
 
 		if reset:
 			self.reset()
+
 		return response
 
 	def paginate(self, page_size=100):

@@ -7,7 +7,7 @@ import faker
 from faker import Faker
 from colorama import Fore
 from dotenv import load_dotenv
-from psps.powerschool import PowerSchool
+from powerschool_adapter.powerschool import PowerSchool
 
 load_dotenv()
 fake = Faker()
