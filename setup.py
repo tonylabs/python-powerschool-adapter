@@ -19,6 +19,7 @@ setup(
     install_requires=[                      # Dependencies
         "requests>=2.20.0",
         "python-dotenv>=1.0.1",
-        "faker>=35.0.0"
+        "faker>=35.0.0",
+        "diskcache>=5.6.0"
     ],
 )

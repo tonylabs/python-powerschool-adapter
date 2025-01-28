@@ -17,50 +17,40 @@ DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWIS
 FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+import time
 import base64
 import requests
-from cachetools import TTLCache
-from cachetools import cached
+from diskcache import Cache
 
 
 class Request:
 
-	def __init__(self, server_address, client_id, client_secret, cache_key=None, cache_ttl=3600):
-		"""
-		Initializes a new Request object to interact with PowerSchool's API.
-		:param server_address: The URL of the server
-		:param client_id: The client ID obtained from installing a plugin with OAuth enabled
-		:param client_secret: The client secret obtained from installing a plugin with OAuth enabled
-		:param cache_key: The key for the cache (used for auth token caching)
-		:param cache_ttl: Time-to-live for the cache in seconds (default: 3600)
-		"""
+	def __init__(self, server_address, client_id, client_secret, cache_key=None):
 		self.server_address = server_address
 		self.client_id = client_id
 		self.client_secret = client_secret
 		self.cache_key = cache_key
-		self.cache = TTLCache(maxsize=50, ttl=cache_ttl) if cache_key else None
+		self.cache = Cache('.cache') if cache_key else None
 		self.token = self._get_cached_token() if cache_key else None
 		self.client = requests.Session()
 		self.attempts = 0
 
 	def _get_cached_token(self):
-
-		print(f"Cache object is: {self.cache}")
-		cached_token = self.cache[self.cache_key] if self.cache and self.cache_key in self.cache else None
-		print(f"Cache key: {self.cache_key}, Cached token retrieved: {cached_token}")
-		return cached_token
+		# Fetch the token and its expiration time
+		cached_token = self.cache.get(self.cache_key, default=None, expire_time=True)
+		if cached_token:
+			token, expire_time = cached_token
+			if expire_time:
+				expiration_time_str = time.strftime('%Y-%m-%d %H:%M', time.localtime(expire_time))
+				print(f"The cached token '{token}' will expire at: {expiration_time_str}")
+			return token
+		print("No token found in cache.")
+		return None
 
 	def _cache_token(self, token, ttl):
-		if self.cache:
-			print(f"Caching token: {token} with key: {self.cache_key}, TTL: {ttl}")
-			self.cache[self.cache_key] = token
-			print(self.cache)
-
-	def inspect_cache(self):
-		if self.cache:
-			print(f"Current cache state: {dict(self.cache)}")
-		else:
-			print("Cache is not initialized.")
+		self.cache.set(self.cache_key, token, expire=ttl)
+		self.cache.close()
+		#print(f"Token cached successfully with key '{self.cache}' and TTL: {ttl}")
 
 	def make_request(self, method, endpoint, options=None, json=False):
 		if not self.token:
@@ -80,8 +70,7 @@ class Request:
 		})
 		options["headers"] = headers
 
-		url = f"{self.server_address}{endpoint}"
-		response = self.client.request(method, url, **options)
+		response = self.client.request(method, f"{self.server_address}{endpoint}", **options)
 
 		try:
 			response.raise_for_status()
@@ -106,14 +95,13 @@ class Request:
 			"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
 			"Authorization": f"Basic {token}"
 		}
-		response = self.client.post(f"{self.server_address}/oauth/access_token",
-									data={"grant_type": "client_credentials"}, headers=headers)
+		response = self.client.post(f"{self.server_address}/oauth/access_token", data={"grant_type": "client_credentials"}, headers=headers)
 		response.raise_for_status()
 		json_response = response.json()
 		self.token = json_response["access_token"]
 		ttl = int(json_response["expires_in"])
+		print(f"Authenticated successfully. Token expires in {ttl} seconds.")
 		if self.cache_key:
-			print(f"Preparing to cache the token for key '{self.cache_key}': {self.token} with TTL: {ttl}")
 			self._cache_token(self.token, ttl)
 
 	def get_client(self):

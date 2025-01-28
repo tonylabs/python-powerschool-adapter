@@ -17,130 +17,134 @@ DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWIS
 FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+import re
 import json
-from collections.abc import Iterator, MutableMapping
-from typing import Any, List, Dict
+from typing import Any, Dict, List, Optional
 
-class Response(Iterator, MutableMapping):
+class Response:
 
-    def __init__(self, data: Dict[str, Any], key: str = ""):
-        self.data = data.get(key, data) if isinstance(data, dict) else data
-        self.original_data = data
-        self.meta = {}
-        self.index = 0
+	def __init__(self, data, key: str = "data"):
 
-        # Extract metadata, expansions, or extensions if available
-        self.meta.update(data.get("@extensions", {}))
-        self.meta.update(data.get("@expansions", {}))
+		self.table_name = data["name"] if isinstance(data, dict) and "name" in data else None
+		self.data = self.infer_data(data, key.lower()) if isinstance(data, dict) else data
+		self.original_data = data
+		self.extensions: Optional[List[str]] = None
+		self.expansions: Optional[List[str]] = None
+		self.meta: Dict[str, Any] = {}
+		self.index = 0
+		self.is_single_item = isinstance(key, int) and len(data) == 1
 
-
-    def is_empty(self) -> bool:
-        return not bool(self.data)
-
-
-    def count(self) -> int:
-        return len(self.data) if isinstance(self.data, list) else 1
+		# Extract metadata, expansions, or extensions if available
+		self.meta.update(data.get("@extensions", {}))
+		self.meta.update(data.get("@expansions", {}))
 
 
-    def current(self) -> Any:
-        if isinstance(self.data, list):
-            return self.data[self.index] if self.index < len(self.data) else None
-        return self.data
+	def infer_data(self, data: Dict[str, Any], key: str) -> Dict[str, Any]:
+		if not data:
+			return {}
+
+		if "results" in data:
+			return data["results"]
+
+		# Check if there is nested data
+		nested = data.get(f"{key}s")
+		if nested:
+			return self.infer_data(nested, key)
+
+		keys = list(data.keys())
+
+		# Check if every key is numeric
+		if all(k.isdigit() for k in keys):
+			return data
+
+		meta_keys = ["@extensions", "@expansions"]
+		for meta_key in meta_keys:
+			self.set_meta(data, meta_key)
+			data.pop(meta_key, None)
+
+		if key in data:
+			return data[key]
+
+		# If there's only one key, keep drilling
+		if len(keys) == 1:
+			first = list(data.values())[0]
+
+			if isinstance(first, dict):  # If this is a dictionary, recurse
+				return self.infer_data(first, "")
+
+		return data
 
 
-    def to_dict(self) -> Dict[str, Any]:
-        return self.data if isinstance(self.data, dict) else {}
+	def clean_property(self, property_name: str) -> str:
+		return re.sub(r"[^a-zA-Z0-9_]", '', property_name)
 
 
-    def to_json(self) -> str:
-        return json.dumps(self.data)
+	def split_comma_string(self, string: Optional[str]) -> List[str]:
+		if not string:
+			return []
+		parts = string.split(',')
+		return [s.strip() for s in parts]
 
 
-    def rewind(self) -> None:
-        self.index = 0
+	def get_meta(self):
+		return self.meta
 
-    def __iter__(self) -> Iterator:
-        """
-        Returns the iterator object.
-        """
-        return iter(self.data) if isinstance(self.data, list) else iter([self.data])
 
-    def __next__(self) -> Any:
-        """
-        Iterates over the response data.
-        """
-        if isinstance(self.data, list):
-            if self.index < len(self.data):
-                result = self.data[self.index]
-                self.index += 1
-                return result
-            else:
-                raise StopIteration
-        else:
-            if self.index == 0:
-                self.index += 1
-                return self.data
-            else:
-                raise StopIteration
+	def set_meta(self, data: Dict[str, Any], property_name: str):
+		clean = self.clean_property(property_name)
+		value = data.get(property_name)
 
-    def __getitem__(self, key: str) -> Any:
-        """
-        Allows dictionary-like access to the response data.
-        """
-        if isinstance(self.data, dict):
-            return self.data.get(key)
-        raise TypeError("Response data is not a dictionary.")
+		if clean in ["extensions", "expansions"]:
+			setattr(self, clean, self.split_comma_string(value))
+		else:
+			self.meta[clean] = value
 
-    def __setitem__(self, key: str, value: Any) -> None:
-        """
-        Allows setting values like a dictionary.
-        """
-        if isinstance(self.data, dict):
-            self.data[key] = value
-        else:
-            raise TypeError("Response data is not a dictionary.")
 
-    def __delitem__(self, key: str) -> None:
-        """
-        Allows deleting keys like a dictionary.
-        """
-        if isinstance(self.data, dict):
-            del self.data[key]
-        else:
-            raise TypeError("Response data is not a dictionary.")
+	def is_empty(self) -> bool:
+		return not bool(self.data)
 
-    def __contains__(self, key: str) -> bool:
-        """
-        Checks if a key exists in the data.
-        """
-        if isinstance(self.data, dict):
-            return key in self.data
-        return False
+	def count(self) -> int:
+		return len(self.data) if isinstance(self.data, list) else 1
 
-    def __len__(self) -> int:
-        """
-        Returns the length of the data.
-        """
-        return len(self.data) if isinstance(self.data, list) else 1
+	def current(self) -> Any:
+		if isinstance(self.data, list):
+			return self.data[self.index] if self.index < len(self.data) else None
+		return self.data
 
-    def __repr__(self) -> str:
-        """
-        Returns a string representation of the Response object.
-        """
-        return f"<Response data={self.data}>"
+	def to_dict(self) -> Dict[str, Any]:
+		return self.data if isinstance(self.data, dict) else {}
 
-    def get_original_data(self) -> Dict[str, Any]:
-        return self.original_data
+	def to_json(self) -> str:
+		return json.dumps(self.data)
 
-    def get_meta(self) -> Dict[str, Any]:
-        return self.meta
+	def rewind(self) -> None:
+		self.index = 0
 
-    def collect(self) -> List[Dict[str, Any]]:
-        return self.data if isinstance(self.data, list) else [self.data]
+	def get_original_data(self) -> Dict[str, Any]:
+		return self.original_data
 
-    def squash_table_response(self, table_name: str) -> "Response":
-        if isinstance(self.data, list) and all("tables" in item for item in self.data):
-            self.data = [item["tables"].get(table_name, item) for item in self.data]
-        elif isinstance(self.data, dict) and "tables" in self.data:
-            self.data = self.data["tables"].get(table_name, self.data)
-        return self
+
+	def collect(self) -> List[Dict[str, Any]]:
+		return self.data if isinstance(self.data, list) else [self.data]
+
+	def squash_table_response(self):
+		if not self.table_name:
+			return self
+
+		# Check if self.data is associative (dictionary in Python)
+		is_assoc = isinstance(self.data, dict)
+
+		# If it's associative, wrap it in a list
+		if is_assoc:
+			self.data = [self.data]
+
+		# Map over self.data and extract the required table data
+		self.data = [
+			datum["tables"][self.table_name] for datum in self.data if "tables" in datum
+		]
+
+		# If it was originally associative, take the first element
+		if is_assoc:
+			self.data = self.data[0] if self.data else None
+
+		return self

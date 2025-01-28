@@ -381,6 +381,7 @@ class PowerSchool:
 
 		# Send the request
 		response = self.request.make_request(self.http_method, self.endpoint, self.options, self.response_as_json)
+		# response is a dictionary containing the JSON response from the server
 		response = Response(response)
 
 		if reset:
