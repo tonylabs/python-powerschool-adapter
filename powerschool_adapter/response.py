@@ -21,15 +21,16 @@ import re
 import json
 from typing import Any, Dict, List, Optional
 
+
 class Response:
 
-	def __init__(self, data, key: str = "data"):
-
-		self.table_name = data["name"] if isinstance(data, dict) and "name" in data else None
+	def __init__(self, data, key: str = "record"):
+		print(f"Response raw data: {data} | Type is {type(data)}")
 		self.data = self.infer_data(data, key.lower()) if isinstance(data, dict) else data
+		self.table_name = data["name"] if isinstance(data, dict) and "name" in data else None
 		self.original_data = data
-		self.extensions: Optional[List[str]] = None
 		self.expansions: Optional[List[str]] = None
+		self.extensions: Optional[List[str]] = None
 		self.meta: Dict[str, Any] = {}
 		self.index = 0
 		self.is_single_item = isinstance(key, int) and len(data) == 1
@@ -37,7 +38,6 @@ class Response:
 		# Extract metadata, expansions, or extensions if available
 		self.meta.update(data.get("@extensions", {}))
 		self.meta.update(data.get("@expansions", {}))
-
 
 	def infer_data(self, data: Dict[str, Any], key: str) -> Dict[str, Any]:
 		if not data:
@@ -68,16 +68,13 @@ class Response:
 		# If there's only one key, keep drilling
 		if len(keys) == 1:
 			first = list(data.values())[0]
-
 			if isinstance(first, dict):  # If this is a dictionary, recurse
 				return self.infer_data(first, "")
 
 		return data
 
-
 	def clean_property(self, property_name: str) -> str:
 		return re.sub(r"[^a-zA-Z0-9_]", '', property_name)
-
 
 	def split_comma_string(self, string: Optional[str]) -> List[str]:
 		if not string:
@@ -85,20 +82,16 @@ class Response:
 		parts = string.split(',')
 		return [s.strip() for s in parts]
 
-
 	def get_meta(self):
 		return self.meta
-
 
 	def set_meta(self, data: Dict[str, Any], property_name: str):
 		clean = self.clean_property(property_name)
 		value = data.get(property_name)
-
 		if clean in ["extensions", "expansions"]:
 			setattr(self, clean, self.split_comma_string(value))
 		else:
 			self.meta[clean] = value
-
 
 	def is_empty(self) -> bool:
 		return not bool(self.data)
@@ -111,8 +104,23 @@ class Response:
 			return self.data[self.index] if self.index < len(self.data) else None
 		return self.data
 
+	def to_list(self) -> List[Dict[str, Any]]:
+		return self.data if isinstance(self.data, list) else [self.data]
+
 	def to_dict(self) -> Dict[str, Any]:
-		return self.data if isinstance(self.data, dict) else {}
+		if isinstance(self.data, dict):
+			return self.data  # Already a dictionary, return as is
+
+		if isinstance(self.data, list):
+			# Convert the list to a dictionary using 'id' as the key if available
+			try:
+				return {str(item["id"]): item for item in self.data if "id" in item}
+			except TypeError:
+				# If items are not dicts, just enumerate them
+				return {str(index): item for index, item in enumerate(self.data)}
+
+		return {}  # If self.data is not a list or dict, return an empty dict
+
 
 	def to_json(self) -> str:
 		return json.dumps(self.data)
@@ -122,10 +130,6 @@ class Response:
 
 	def get_original_data(self) -> Dict[str, Any]:
 		return self.original_data
-
-
-	def collect(self) -> List[Dict[str, Any]]:
-		return self.data if isinstance(self.data, list) else [self.data]
 
 	def squash_table_response(self):
 		if not self.table_name:

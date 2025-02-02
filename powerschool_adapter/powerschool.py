@@ -22,8 +22,8 @@ from .response import Response
 from .paginator import Paginator
 from urllib.parse import parse_qs
 
-class PowerSchool:
 
+class PowerSchool:
 	GET = "GET"
 	POST = "POST"
 	PUT = "PUT"
@@ -116,7 +116,7 @@ class PowerSchool:
 
 	def set_named_query(self, query_name: str, data: dict = None):
 		self.endpoint = query_name if query_name.startswith('/') else f"/ws/schema/query/{query_name}"
-		self.page_key = 'record'
+		self.page_key = "record"
 
 		# If there's data along with it, it's shorthand for sending the request
 		if data:
@@ -381,8 +381,9 @@ class PowerSchool:
 
 		# Send the request
 		response = self.request.make_request(self.http_method, self.endpoint, self.options, self.response_as_json)
+
 		# response is a dictionary containing the JSON response from the server
-		response = Response(response)
+		response = Response(response, self.page_key)
 
 		if reset:
 			self.reset()
