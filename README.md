@@ -54,6 +54,12 @@ student_data = json.loads(response.to_json())
 print(json.dumps(student_data, indent=4))
 ```
 
+### `extensions`
+
+```python
+response = powerschool.to('/ws/v1/student').set_id(52).expansions(['demographics', 'addresses', 'alerts', 'phones', 'school_enrollment', 'ethnicity_race', 'contact', 'contact_info', 'initial_enrollment']).get()
+```
+
 #### `set_endpoint(query)`
 
 _Aliases: to_endpoint(), to()_

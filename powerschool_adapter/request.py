@@ -50,7 +50,7 @@ class Request:
 	def _cache_token(self, token, ttl):
 		self.cache.set(self.cache_key, token, expire=ttl)
 		self.cache.close()
-		#print(f"Token cached successfully with key '{self.cache}' and TTL: {ttl}")
+		print(f"Token cached successfully with key '{self.cache}' and TTL: {ttl}")
 
 	def make_request(self, method, endpoint, options=None, json=False):
 		if not self.token:
