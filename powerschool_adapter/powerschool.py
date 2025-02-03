@@ -80,17 +80,13 @@ class PowerSchool:
 	def resource(self, endpoint: str, method: str = None, data: dict = None):
 		self.endpoint = endpoint
 		self.include_projection = False
-
 		if method is not None:
 			self.http_method = method
-
 		if data:
 			self.set_data(data)
-
 		# If the method and data are set, automatically send the request
 		if self.http_method is not None and self.data:
 			return self.send()
-
 		return self
 
 	def exclude_projection(self):
@@ -105,14 +101,14 @@ class PowerSchool:
 		self.page_key = endpoint.split('/')[-1]
 		return self.exclude_projection()
 
-	def get_endpoint(self):
-		return self.endpoint
-
 	def to_endpoint(self, endpoint: str):
 		return self.set_endpoint(endpoint)
 
 	def to(self, endpoint: str):
 		return self.set_endpoint(endpoint)
+
+	def get_endpoint(self):
+		return self.endpoint
 
 	def set_named_query(self, query_name: str, data: dict = None):
 		self.endpoint = query_name if query_name.startswith('/') else f"/ws/schema/query/{query_name}"

@@ -28,22 +28,21 @@ class TestPowerSchool(unittest.TestCase):
     def test_token(self):
         if not CLIENT_ID or not CLIENT_SECRET:
             self.fail("Client ID or Client Secret not set in environment variables")
-        print(powerschool.get_token())
+        print(Fore.LIGHTBLUE_EX + powerschool.get_token())
 
     def test_table(self):
         print(Fore.LIGHTRED_EX + "Testing table method")
         response = powerschool.table('students').projection(['ID', 'DCID', 'STUDENT_NUMBER', 'LASTFIRST']).sort('lastfirst').method(powerschool.GET).send()
-
         # Output Response
         student = response.to_json()
         student_data = json.loads(student)
-        print(Fore.GREEN + json.dumps(student_data, indent=4))
+        print(Fore.LIGHTCYAN_EX + json.dumps(student_data, indent=4))
 
     def test_set_id(self):
         response = powerschool.table('Students').set_id(1).projection(['ID', 'DCID', 'STUDENT_NUMBER', 'LASTFIRST', 'FAMILY_IDENT']).method(powerschool.GET).send()
         student = response.to_json()
         student_data = json.loads(student)
-        print(Fore.GREEN + json.dumps(student_data, indent=4))
+        print(Fore.LIGHTYELLOW_EX + json.dumps(student_data, indent=4))
 
 if __name__ == "__main__":
     unittest.main()

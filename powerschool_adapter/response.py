@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional
 class Response:
 
 	def __init__(self, data, key: str = "record"):
-		print(f"Response raw data: {data} | Type is {type(data)}")
+		print(f"Response raw {type(data)}: {data}")
 		self.data = self.infer_data(data, key.lower()) if isinstance(data, dict) else data
 		self.table_name = data["name"] if isinstance(data, dict) and "name" in data else None
 		self.original_data = data

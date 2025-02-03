@@ -22,8 +22,17 @@ POWERSCHOOL_CLIENT_SECRET=
 
 #### `PowerSchool`
 
+The PowerSchool token is automatically retrieved upon executing an API call.
+
 ```python
+from dotenv import load_dotenv
 from powerschool_adapter.powerschool import PowerSchool
+
+load_dotenv()
+
+SERVER_ADDRESS = os.getenv("POWERSCHOOL_SERVER_ADDRESS")
+CLIENT_ID = os.getenv("POWERSCHOOL_CLIENT_ID")
+CLIENT_SECRET = os.getenv("POWERSCHOOL_CLIENT_SECRET")
 
 powerschool = PowerSchool(
     server_address=SERVER_ADDRESS,
@@ -36,13 +45,27 @@ powerschool = PowerSchool(
 
 _Aliases: table()_
 
-This "sets" the table with which you're interacting. Applies to database extensions.
+The set_table function is used to specify which database table should be queried.
 
 ```python
-response = powerschool.table('students').projection(["ID", "DCID", "STUDENT_NUMBER", "LASTFIRST"]).set_method("GET").send()
+response = powerschool.table('students').projection(["DCID", "STUDENT_NUMBER", "LASTFIRST"]).set_method("GET").send()
 student_data = json.loads(response.to_json())
 print(json.dumps(student_data, indent=4))
 ```
+
+#### `set_endpoint(query)`
+
+_Aliases: to_endpoint(), to()_
+
+```python
+response = powerschool.set_endpoint("/ws/v1/student").set_id(1).get()
+student_data = json.loads(response.to_json())
+print(json.dumps(student_data, indent=4))
+```
+
+#### `get_endpoint()`
+
+Return the current endpoint
 
 #### `setId($id)`
 
@@ -58,16 +81,6 @@ print(json.dumps(student_data, indent=4))
 
 ```python
 response = powerschool.to('/ws/v1/student').set_id(52).expansions(['demographics', 'addresses', 'alerts', 'phones', 'school_enrollment', 'ethnicity_race', 'contact', 'contact_info', 'initial_enrollment']).get()
-```
-
-#### `set_endpoint(query)`
-
-_Aliases: to_endpoint(), to()_
-
-```python
-response = powerschool.set_endpoint("/ws/v1/student").set_id(1).get()
-student_data = json.loads(response.to_json())
-print(json.dumps(student_data, indent=4))
 ```
 
 #### `q(expression)`
