@@ -1,15 +1,12 @@
 import os
 import json
 import unittest
-import colorama
 from faker import Faker
-from colorama import Fore
 from dotenv import load_dotenv
 from powerschool_adapter.powerschool import PowerSchool
 
 load_dotenv()
 fake = Faker()
-colorama.init(autoreset=True)
 
 # Load sensitive data from environment variables
 SERVER_ADDRESS = os.getenv("POWERSCHOOL_SERVER_ADDRESS")
@@ -58,10 +55,10 @@ class TestPowerSchoolEnrollment(unittest.TestCase):
 			}
 		}
 
-		print(Fore.LIGHTCYAN_EX + json.dumps(payload, indent=4))
+		print(json.dumps(payload, indent=4))
 		response = powerschool.to('/ws/v1/student').with_data(payload).method("POST").send()
 		student_data = json.loads(response.to_json())
-		print(Fore.GREEN + json.dumps(student_data, indent=4))
+		print(json.dumps(student_data, indent=4))
 
 
 if __name__ == "__main__":

@@ -35,9 +35,9 @@ CLIENT_ID = os.getenv("POWERSCHOOL_CLIENT_ID")
 CLIENT_SECRET = os.getenv("POWERSCHOOL_CLIENT_SECRET")
 
 powerschool = PowerSchool(
-    server_address=SERVER_ADDRESS,
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET
+	server_address=SERVER_ADDRESS,
+	client_id=CLIENT_ID,
+	client_secret=CLIENT_SECRET
 )
 ```
 

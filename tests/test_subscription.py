@@ -1,16 +1,12 @@
 import os
 import json
 import unittest
-import colorama
-import faker
 from faker import Faker
-from colorama import Fore
 from dotenv import load_dotenv
 from powerschool_adapter.powerschool import PowerSchool
 
 load_dotenv()
 fake = Faker()
-colorama.init(autoreset=True)
 
 # Load sensitive data from environment variables
 SERVER_ADDRESS = os.getenv("POWERSCHOOL_SERVER_ADDRESS")
@@ -29,20 +25,20 @@ class TestSubscription(unittest.TestCase):
         response = powerschool.to('/ws/v1/event_subscription').method('PUT').send()
         student = response.to_json()
         student_data = json.loads(student)
-        print(Fore.GREEN + json.dumps(student_data, indent=4))
+        print(json.dumps(student_data, indent=4))
     """
 
     def test_review_subscription(self):
         response = powerschool.to('/ws/v1/event_subscription').method('GET').send()
         student = response.to_json()
         student_data = json.loads(student)
-        print(Fore.GREEN + json.dumps(student_data, indent=4))
+        print(json.dumps(student_data, indent=4))
 
     def remove_subscription(self):
         response = powerschool.to('/ws/v1/event_subscription').method('DELETE').send()
         student = response.to_json()
         student_data = json.loads(student)
-        print(Fore.GREEN + json.dumps(student_data, indent=4))
+        print(json.dumps(student_data, indent=4))
 
 if __name__ == "__main__":
     unittest.main()
