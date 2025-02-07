@@ -1,5 +1,9 @@
 # PowerSchool Python Adapter
 
+The PowerSchool Adapter is a Python package designed to facilitate seamless integration with the PowerSchool Student Information System (SIS). It provides a set of tools and functionalities that enable developers to interact programmatically with PowerSchool’s data and services, streamlining tasks such as data retrieval, updates, and synchronization between PowerSchool and other applications. This adapter is particularly useful for educational institutions and software developers aiming to enhance their systems’ interoperability with PowerSchool, ensuring efficient data management and operational workflows.
+
+## Prerequisites
+
 This package is to be used with alongside a PowerSchool plugin that has enabled <oauth/> in the plugin.xml. This guide assumes you have PowerSchool API and plugin knowledge and does not cover the details of a plugin or its API.
 
 ## Installation
