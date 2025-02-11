@@ -27,7 +27,7 @@ class Response:
 	def __init__(self, data, key: str = "record"):
 		print(f"Response raw {type(data)}: {data}")
 		self.data = self.infer_data(data, key.lower()) if isinstance(data, dict) else data
-		self.table_name = data["name"] if isinstance(data, dict) and "name" in data else None
+		self.table_name = data["name"].lower() if isinstance(data, dict) and "name" in data else None
 		self.original_data = data
 		self.expansions: Optional[List[str]] = None
 		self.extensions: Optional[List[str]] = None
