@@ -25,7 +25,10 @@ from typing import Any, Dict, List, Optional
 class Response:
 
 	def __init__(self, data, key: str = "record"):
-		print(f"Response raw {type(data)}: {data}")
+		# Data Example:
+		"""
+		{'name': 'Students', 'record': [{'id': 1, 'tables': {'students': {'dcid': '1', 'student_number': '10006', 'id': '1', 'first_name': 'Tony'}}}]}
+		"""
 		self.data = self.infer_data(data, key.lower()) if isinstance(data, dict) else data
 		self.table_name = data["name"].lower() if isinstance(data, dict) and "name" in data else None
 		self.original_data = data
@@ -34,8 +37,6 @@ class Response:
 		self.meta: Dict[str, Any] = {}
 		self.index = 0
 		self.is_single_item = isinstance(key, int) and len(data) == 1
-
-		# Extract metadata, expansions, or extensions if available
 		self.meta.update(data.get("@extensions", {}))
 		self.meta.update(data.get("@expansions", {}))
 
@@ -73,25 +74,45 @@ class Response:
 
 		return data
 
+	def set_data(self, data: Dict[str, Any]):
+		self.data = data
+		return self
+
+	def get_original_data(self) -> Dict[str, Any]:
+		return self.original_data
+
 	def clean_property(self, property_name: str) -> str:
 		return re.sub(r"[^a-zA-Z0-9_]", '', property_name)
+
+	def set_meta(self, data: Dict[str, Any], property_name: str):
+		property = self.clean_property(property_name)
+		value = data.get(property_name)
+		if property in ["extensions", "expansions"]:
+			setattr(self, property, self.split_comma_string(value))
+		else:
+			self.meta[property] = value
+
+	def get_meta(self):
+		return self.meta
+
+	def squash_table_response(self):
+		if not self.table_name:
+			return self
+		is_assoc = isinstance(self.data, dict)
+		if is_assoc:
+			self.data = [self.data]
+		self.data = [
+			datum["tables"][self.table_name] for datum in self.data if "tables" in datum
+		]
+		if is_assoc:
+			self.data = self.data[0] if self.data else None
+		return self
 
 	def split_comma_string(self, string: Optional[str]) -> List[str]:
 		if not string:
 			return []
 		parts = string.split(',')
 		return [s.strip() for s in parts]
-
-	def get_meta(self):
-		return self.meta
-
-	def set_meta(self, data: Dict[str, Any], property_name: str):
-		clean = self.clean_property(property_name)
-		value = data.get(property_name)
-		if clean in ["extensions", "expansions"]:
-			setattr(self, clean, self.split_comma_string(value))
-		else:
-			self.meta[clean] = value
 
 	def is_empty(self) -> bool:
 		return not bool(self.data)
@@ -103,6 +124,12 @@ class Response:
 		if isinstance(self.data, list):
 			return self.data[self.index] if self.index < len(self.data) else None
 		return self.data
+
+	def next(self):
+		self.index += 1
+
+	def key(self):
+		return self.index
 
 	def to_list(self) -> List[Dict[str, Any]]:
 		return self.data if isinstance(self.data, list) else [self.data]
@@ -121,34 +148,8 @@ class Response:
 
 		return {}  # If self.data is not a list or dict, return an empty dict
 
-
 	def to_json(self) -> str:
 		return json.dumps(self.data)
 
 	def rewind(self) -> None:
 		self.index = 0
-
-	def get_original_data(self) -> Dict[str, Any]:
-		return self.original_data
-
-	def squash_table_response(self):
-		if not self.table_name:
-			return self
-
-		# Check if self.data is associative (dictionary in Python)
-		is_assoc = isinstance(self.data, dict)
-
-		# If it's associative, wrap it in a list
-		if is_assoc:
-			self.data = [self.data]
-
-		# Map over self.data and extract the required table data
-		self.data = [
-			datum["tables"][self.table_name] for datum in self.data if "tables" in datum
-		]
-
-		# If it was originally associative, take the first element
-		if is_assoc:
-			self.data = self.data[0] if self.data else None
-
-		return self

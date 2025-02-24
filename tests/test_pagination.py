@@ -1,7 +1,5 @@
 import os
-import json
 import unittest
-from faker import Faker
 from dotenv import load_dotenv
 from powerschool_adapter.powerschool import PowerSchool
 
@@ -20,15 +18,13 @@ powerschool = PowerSchool(
 
 class TestPagination(unittest.TestCase):
 	def test_pagination(self):
-		response = powerschool.table('students').projection(["DCID", "STUDENT_NUMBER", "FIRST_NAME", "LAST_NAME", "LASTFIRST"]).sort('STUDENT_NUMBER').page_size(1).paginate()
-
-		# Loop through all pages
+		powerschool.table('students').projection(["ID", "STUDENT_NUMBER", "FIRST_NAME"]).sort('STUDENT_NUMBER')
 		while True:
-			response = response.next_page()
-			if not response:
+			students = powerschool.paginate(page_size=1)
+			if not students:
 				break
-			student_data = json.loads(response.to_json())
-			print(json.dumps(student_data, indent=4))
+			for student in students:
+				print(student)
 
 if __name__ == "__main__":
 	unittest.main()

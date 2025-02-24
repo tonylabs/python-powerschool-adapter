@@ -22,7 +22,6 @@ from .response import Response
 from .paginator import Paginator
 from urllib.parse import parse_qs
 
-
 class PowerSchool:
 	GET = "GET"
 	POST = "POST"
@@ -113,14 +112,9 @@ class PowerSchool:
 	def set_named_query(self, query_name: str, data: dict = None):
 		self.endpoint = query_name if query_name.startswith('/') else f"/ws/schema/query/{query_name}"
 		self.page_key = "record"
-
-		# If there's data along with it, it's shorthand for sending the request
 		if data:
 			return self.set_data(data).post()
-
-		# By default, don't include the projection unless it gets added later explicitly
 		self.include_projection = False
-
 		return self.set_method(self.POST)
 
 	""" Alias of set_named_query """
@@ -374,13 +368,8 @@ class PowerSchool:
 			raise ValueError("Endpoint must be set before sending a request.")
 
 		self.build_request_json().build_request_query()
-
-		# Send the request
 		response = self.request.make_request(self.http_method, self.endpoint, self.options, self.response_as_json)
-
-		# response is a dictionary containing the JSON response from the server
 		response = Response(response, self.page_key)
-
 		if reset:
 			self.reset()
 
@@ -390,7 +379,11 @@ class PowerSchool:
 		if not self.paginator:
 			from .paginator import Paginator
 			self.paginator = Paginator(self, page_size)
-		return self.paginator.get_next_page()
+		results = self.paginator.next_page()
+		if not results:
+			return self.reset()
+		# Assuming response.data is iterable
+		return results.data  # Ensure this returns an iterable
 
 	def get_token(self):
 		return self.request.token

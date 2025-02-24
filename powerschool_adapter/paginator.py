@@ -21,29 +21,26 @@ FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 class Paginator:
 
 	def __init__(self, builder, page_size=100):
+		print(f"Paginator builder with page size: {page_size}")
 		self.builder = builder
-		self.page_size = page_size
-		self.current_page = 1
+		self.page = 1
 		self.has_more = True
-		self.builder.page_size(self.page_size)
-		self.builder.page(self.current_page)
+		self.builder.page_size(page_size).page(self.page)
 
 	def next_page(self):
 		if not self.has_more:
 			return None
+		response = self.builder.page(self.page).send(reset=False)
+		if not response.is_empty():
+			self.builder.data = response.data
 
-		self.builder.page(self.current_page)
-		self.builder.page_size(self.page_size)
-		response = self.builder.send(reset=False)
-
-		# Check if we have more pages
-		results = response.get_data()
-		if not results or len(results) == 0:
+		if response.is_empty():
+			self.page = 1
 			self.has_more = False
 			return None
 
-		self.current_page += 1
-		return results
+		self.page += 1
+		return response
 
 	def get_next_page(self):
 		return self.next_page()
