@@ -98,3 +98,15 @@ response = powerschool.set_endpoint("/ws/v1/student").q("name.last_name==Ada*").
 student_data = json.loads(response.to_json())
 print(json.dumps(student_data, indent=4))
 ```
+
+#### `paginator()`
+
+```python
+powerschool.table('students').projection(["ID", "STUDENT_NUMBER", "FIRST_NAME"]).sort('STUDENT_NUMBER')
+		while True:
+			students = powerschool.paginate(page_size=1)
+			if not students:
+				break
+			for student in students:
+				print(student)
+```
